@@ -41,20 +41,6 @@ export const portfolioData = {
       ],
       liveLink: "https://drivewheelz.example.com",
       status: "Live"
-    },
-    {
-      id: 2,
-      title: "Portfolio Website",
-      subtitle: "Personal Brand Platform",
-      description: "Modern, responsive portfolio website showcasing projects and technical skills with clean design principles.",
-      technologies: ["React", "CSS", "JavaScript"],
-      features: [
-        "Responsive design",
-        "Clean, modern UI",
-        "Project showcase",
-        "Skills presentation"
-      ],
-      status: "In Development"
     }
   ],
 
