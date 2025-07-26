@@ -7,7 +7,7 @@ const EnhancedHeroSection = ({ data }) => {
   };
 
   return (
-    <section id="hero" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
+    <section id="hero" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden pt-20">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-400 rounded-full blur-3xl"></div>
@@ -18,11 +18,9 @@ const EnhancedHeroSection = ({ data }) => {
         <div className="space-y-8 animate-slideUp">
           {/* Name with elegant typography */}
           <div className="space-y-6">
-            <h1 className="text-6xl md:text-8xl font-light text-gray-900 tracking-tight leading-none">
-              {data.name.split(" ")[0]}
-              <br />
-              <span className="font-normal bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {data.name.split(" ")[1]}
+            <h1 className="text-5xl md:text-7xl font-light tracking-tight leading-none">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {data.name}
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 font-light max-w-2xl mx-auto">
