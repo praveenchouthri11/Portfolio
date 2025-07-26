@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Mail, Phone, MapPin, Linkedin, Github, Send, CheckCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Linkedin, Github, Send, CheckCircle, AlertCircle } from "lucide-react";
+import { portfolioAPI, handleAPIError } from "../services/api";
 
 const EnhancedContactSection = ({ data }) => {
   const [formData, setFormData] = useState({
@@ -8,7 +9,9 @@ const EnhancedContactSection = ({ data }) => {
     subject: "",
     message: ""
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+  const [statusMessage, setStatusMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -17,13 +20,33 @@ const EnhancedContactSection = ({ data }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock form submission
-    console.log("Form submitted:", formData);
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 3000);
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const response = await portfolioAPI.submitContactForm(formData);
+      
+      if (response.success) {
+        setSubmitStatus('success');
+        setStatusMessage(response.message);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        throw new Error(response.message || 'Failed to send message');
+      }
+    } catch (error) {
+      setSubmitStatus('error');
+      setStatusMessage(handleAPIError(error, 'Failed to send message. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+      
+      // Clear status after 5 seconds
+      setTimeout(() => {
+        setSubmitStatus(null);
+        setStatusMessage("");
+      }, 5000);
+    }
   };
 
   const contactMethods = [
@@ -142,11 +165,21 @@ const EnhancedContactSection = ({ data }) => {
               Send a Message
             </h3>
             
-            {isSubmitted && (
+            {/* Status Messages */}
+            {submitStatus === 'success' && (
               <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg flex items-center gap-3">
                 <CheckCircle className="text-green-600" size={20} />
                 <span className="text-green-800 font-medium">
-                  Message sent successfully! I'll get back to you soon.
+                  {statusMessage}
+                </span>
+              </div>
+            )}
+            
+            {submitStatus === 'error' && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg flex items-center gap-3">
+                <AlertCircle className="text-red-600" size={20} />
+                <span className="text-red-800 font-medium">
+                  {statusMessage}
                 </span>
               </div>
             )}
@@ -163,7 +196,8 @@ const EnhancedContactSection = ({ data }) => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="John Doe"
                   />
                 </div>
@@ -177,7 +211,8 @@ const EnhancedContactSection = ({ data }) => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -193,7 +228,8 @@ const EnhancedContactSection = ({ data }) => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Let's collaborate on a project"
                 />
               </div>
@@ -208,17 +244,28 @@ const EnhancedContactSection = ({ data }) => {
                   onChange={handleChange}
                   required
                   rows={5}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Tell me about your project or just say hello..."
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 btn-primary"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <Send size={18} />
-                Send Message
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Send Message
+                  </>
+                )}
               </button>
             </form>
           </div>
