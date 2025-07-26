@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
@@ -9,6 +9,10 @@ import logging
 import uuid
 from pathlib import Path
 from dotenv import load_dotenv
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -40,7 +44,177 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Models
+# Email Configuration
+SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'your-email@gmail.com')  # Placeholder
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', 'your-app-password')      # Placeholder
+FROM_EMAIL = os.environ.get('FROM_EMAIL', SMTP_USERNAME)
+TO_EMAIL = 'praveenchouthri@gmail.com'  # Praveen's email
+
+# Email service
+class EmailService:
+    @staticmethod
+    async def send_contact_notification(contact_data: dict):
+        """Send email notification to Praveen about new contact form submission"""
+        try:
+            # Email content for Praveen
+            subject = f"New Portfolio Contact: {contact_data['subject']}"
+            
+            html_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                            🎉 New Contact Form Submission
+                        </h2>
+                        
+                        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #1f2937;">Contact Details:</h3>
+                            <p><strong>Name:</strong> {contact_data['name']}</p>
+                            <p><strong>Email:</strong> <a href="mailto:{contact_data['email']}" style="color: #2563eb;">{contact_data['email']}</a></p>
+                            <p><strong>Subject:</strong> {contact_data['subject']}</p>
+                            <p><strong>Submitted:</strong> {contact_data['timestamp'].strftime('%B %d, %Y at %I:%M %p')}</p>
+                        </div>
+                        
+                        <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                            <h3 style="margin-top: 0; color: #1f2937;">Message:</h3>
+                            <p style="white-space: pre-line; background-color: #f9fafb; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb;">
+{contact_data['message']}
+                            </p>
+                        </div>
+                        
+                        <div style="margin-top: 30px; padding: 20px; background-color: #dbeafe; border-radius: 8px;">
+                            <p style="margin: 0; text-align: center; color: #1e40af;">
+                                <strong>Quick Reply:</strong> 
+                                <a href="mailto:{contact_data['email']}?subject=Re: {contact_data['subject']}" 
+                                   style="color: #2563eb; text-decoration: none; font-weight: bold;">
+                                    Reply to {contact_data['name']} →
+                                </a>
+                            </p>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+                            <p>This email was sent from your portfolio contact form</p>
+                            <p>Portfolio: <a href="http://localhost:3000" style="color: #2563eb;">View Live Site</a></p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+            """
+            
+            # Send email in background
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, EmailService._send_email, subject, html_body, TO_EMAIL)
+            
+            logger.info(f"Email notification sent to {TO_EMAIL} for contact from {contact_data['email']}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send email notification: {e}")
+            return False
+    
+    @staticmethod
+    async def send_auto_reply(contact_data: dict):
+        """Send auto-reply confirmation to the person who submitted the form"""
+        try:
+            subject = f"Thanks for reaching out, {contact_data['name'].split()[0]}! 🎉"
+            
+            html_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #2563eb; margin-bottom: 10px;">Thank You!</h1>
+                            <p style="color: #6b7280; font-size: 18px;">Your message has been received</p>
+                        </div>
+                        
+                        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p>Hi <strong>{contact_data['name']}</strong>,</p>
+                            
+                            <p>Thank you for reaching out through my portfolio! I've received your message about 
+                            "<strong>{contact_data['subject']}</strong>" and I'm excited to connect with you.</p>
+                            
+                            <p><strong>What happens next?</strong></p>
+                            <ul style="color: #4b5563;">
+                                <li>I'll review your message within 24 hours</li>
+                                <li>You'll receive a personal response within 2-3 business days</li>
+                                <li>If it's urgent, feel free to call me at +91 8220226734</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #1e40af;">Your Message Summary:</h3>
+                            <p><strong>Subject:</strong> {contact_data['subject']}</p>
+                            <p><strong>Submitted:</strong> {contact_data['timestamp'].strftime('%B %d, %Y at %I:%M %p')}</p>
+                            <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; margin-top: 10px;">
+                                <p style="margin: 0; white-space: pre-line; color: #4b5563;">
+{contact_data['message'][:200]}{'...' if len(contact_data['message']) > 200 else ''}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <p style="color: #6b7280;">In the meantime, feel free to:</p>
+                            <div style="margin-top: 15px;">
+                                <a href="https://linkedin.com/in/praveenchouthri" style="color: #2563eb; text-decoration: none; margin: 0 10px;">📱 Connect on LinkedIn</a>
+                                <a href="https://github.com/praveenchouthri" style="color: #2563eb; text-decoration: none; margin: 0 10px;">💻 Check my GitHub</a>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 30px; text-align: center; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                            <p><strong>Praveen Chouthri</strong></p>
+                            <p>Aspiring Software Developer | BTech + MTech at IIITDM Kancheepuram</p>
+                            <p>📧 praveenchouthri@gmail.com | 📱 +91 8220226734 | 📍 Chennai, India</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+            """
+            
+            # Send auto-reply email
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, EmailService._send_email, subject, html_body, contact_data['email'])
+            
+            logger.info(f"Auto-reply sent to {contact_data['email']}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send auto-reply: {e}")
+            return False
+    
+    @staticmethod
+    def _send_email(subject: str, html_body: str, to_email: str):
+        """Send email using SMTP (runs in thread pool)"""
+        try:
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = FROM_EMAIL
+            msg['To'] = to_email
+            
+            # Attach HTML content
+            html_part = MIMEText(html_body, 'html')
+            msg.attach(html_part)
+            
+            # Send email
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls()
+                
+                # Skip authentication if using placeholder credentials
+                if SMTP_USERNAME != 'your-email@gmail.com' and SMTP_PASSWORD != 'your-app-password':
+                    server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                    server.send_message(msg)
+                    logger.info(f"Email sent successfully to {to_email}")
+                else:
+                    logger.warning(f"SMTP credentials not configured - email would be sent to {to_email}")
+                    logger.info(f"Email preview - Subject: {subject}")
+                    
+        except Exception as e:
+            logger.error(f"SMTP error: {e}")
+            raise
+
+# Models (same as before)
 class ContactInquiry(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., min_length=1, max_length=100)
