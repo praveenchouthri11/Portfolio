@@ -60,25 +60,6 @@ const CertificationsSection = ({ data }) => {
           ))}
         </div>
 
-        {/* Certification Categories Overview */}
-        <div className="bg-gray-50 rounded-3xl p-8">
-          <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">
-            Learning Areas
-          </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(groupedCertifications).map(([category, certs]) => (
-              <div key={category} className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {certs.length}
-                </div>
-                <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
-                  {category}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Call to Action */}
         <div className="mt-16 text-center">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 max-w-3xl mx-auto">
@@ -89,9 +70,9 @@ const CertificationsSection = ({ data }) => {
               I believe in continuous learning and staying updated with the latest technologies. 
               These certifications represent my dedication to professional development and mastering new skills.
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-8">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">5+</div>
+                <div className="text-2xl font-bold text-blue-600">{data.length}</div>
                 <div className="text-sm text-gray-600">Completed</div>
               </div>
               <div className="text-center">
