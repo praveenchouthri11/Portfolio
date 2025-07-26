@@ -82,9 +82,9 @@ const EnhancedPortfolio = () => {
   }
 
   return (
-    <div className="enhanced-portfolio">
+    <div className="enhanced-portfolio bg-white dark:bg-gray-900 transition-colors duration-300">
       {error && (
-        <div className="fixed top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-yellow-100 dark:bg-yellow-900/80 border border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded-lg shadow-lg z-50">
           <p className="text-sm">Using offline data due to connection issues</p>
         </div>
       )}
