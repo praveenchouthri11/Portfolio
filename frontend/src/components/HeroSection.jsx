@@ -61,24 +61,24 @@ const HeroSection = ({ data }) => {
           </div>
 
           {/* CTA Button */}
-          <div className="pt-8">
+          <div className="pt-8 flex flex-col items-center">
             <button
               onClick={() => document.getElementById("projects").scrollIntoView({ behavior: "smooth" })}
               className="bg-gray-900 text-white px-8 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-all duration-300 hover:scale-105"
             >
               View My Work
             </button>
+            
+            {/* Scroll indicator - centered under button */}
+            <button
+              onClick={scrollToNext}
+              className="mt-12 text-gray-400 hover:text-gray-600 transition-colors animate-bounce"
+            >
+              <ChevronDown size={32} />
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Scroll indicator */}
-      <button
-        onClick={scrollToNext}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-400 hover:text-gray-600 transition-colors animate-bounce"
-      >
-        <ChevronDown size={32} />
-      </button>
     </section>
   );
 };
