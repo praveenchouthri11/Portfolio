@@ -1,14 +1,14 @@
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Portfolio from "./components/Portfolio";
+import DesignTemplate from "./components/DesignTemplate";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Portfolio />} />
+          <Route path="/" element={<DesignTemplate />} />
         </Routes>
       </BrowserRouter>
     </div>
