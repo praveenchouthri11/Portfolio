@@ -339,8 +339,8 @@ async def get_portfolio_data():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @api_router.post("/contact", response_model=ContactResponse)
-async def submit_contact_form(inquiry: ContactInquiryCreate):
-    """Submit contact form inquiry"""
+async def submit_contact_form(inquiry: ContactInquiryCreate, background_tasks: BackgroundTasks):
+    """Submit contact form inquiry and send email notifications"""
     try:
         # Create contact inquiry object
         contact_data = ContactInquiry(**inquiry.dict())
@@ -350,9 +350,19 @@ async def submit_contact_form(inquiry: ContactInquiryCreate):
         
         if result.inserted_id:
             logger.info(f"New contact inquiry from {inquiry.email}")
+            
+            # Send email notifications in background
+            contact_dict = contact_data.dict()
+            
+            # Send notification to Praveen
+            background_tasks.add_task(EmailService.send_contact_notification, contact_dict)
+            
+            # Send auto-reply to sender
+            background_tasks.add_task(EmailService.send_auto_reply, contact_dict)
+            
             return ContactResponse(
                 success=True,
-                message="Thank you for your message! I'll get back to you soon.",
+                message="Thank you for your message! I'll get back to you soon. Check your email for confirmation.",
                 id=contact_data.id
             )
         else:
@@ -362,7 +372,7 @@ async def submit_contact_form(inquiry: ContactInquiryCreate):
         logger.error(f"Error submitting contact form: {e}")
         return ContactResponse(
             success=False,
-            message="Sorry, there was an error sending your message. Please try again."
+            message="Sorry, there was an error sending your message. Please try again or email me directly."
         )
 
 @api_router.get("/admin/contacts")
